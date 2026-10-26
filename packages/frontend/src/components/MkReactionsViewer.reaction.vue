@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
-	<MkReactionIcon style="pointer-events: none;" :class="prefer.s.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="reactionEmojis[emojiName]"/>
+	<MkReactionIcon style="pointer-events: none;" :class="[prefer.s.limitWidthOfReaction ? $style.limitWidth : '', { [$style.customEmoji]: reaction[0] === ':' }]" :reaction="reaction" :emojiUrl="reactionEmojis[emojiName]"/>
 	<span :class="$style.count">{{ count }}</span>
 </button>
 </template>
@@ -268,7 +268,9 @@ if (!mock) {
 <style lang="scss" module>
 .root {
 	display: inline-flex;
-	height: 42px;
+	// tamariba: 大きいカスタム絵文字に合わせて伸びるよう、高さは最小値だけ指定する
+	min-height: 42px;
+	max-width: 100%;
 	padding: 0 6px;
 	font-size: 1.5em;
 	border-radius: 6px;
@@ -288,7 +290,7 @@ if (!mock) {
 	}
 
 	&.small {
-		height: 32px;
+		min-height: 32px;
 		font-size: 1em;
 		border-radius: 4px;
 
@@ -299,7 +301,7 @@ if (!mock) {
 	}
 
 	&.large {
-		height: 52px;
+		min-height: 52px;
 		font-size: 2em;
 		border-radius: 8px;
 
@@ -326,6 +328,15 @@ if (!mock) {
 
 .limitWidth {
 	max-width: 70px;
+	object-fit: contain;
+}
+
+// tamariba: カスタム絵文字は画像だけを大きく表示する。高さをそろえ、横幅は画像の縦横比のまま伸ばす
+.root > .customEmoji {
+	height: 140px !important;
+	width: auto;
+	max-width: none;
+	min-width: 0;
 	object-fit: contain;
 }
 

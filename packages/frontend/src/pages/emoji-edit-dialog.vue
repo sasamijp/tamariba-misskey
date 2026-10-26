@@ -233,8 +233,8 @@ async function del() {
 
 .img {
 	display: block;
-	height: 64px;
-	width: 64px;
+	height: 200px;
+	width: 200px;
 	object-fit: contain;
 }
 

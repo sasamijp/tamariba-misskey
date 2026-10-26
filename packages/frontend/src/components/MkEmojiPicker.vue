@@ -753,8 +753,9 @@ defineExpose({
 				> .item {
 					position: relative;
 					padding: 0 3px;
-					width: var(--eachSize);
-					height: var(--eachSize);
+					// tamariba: ピッカーの絵文字を大きく表示する
+					width: 3em;
+					height: 3em;
 					contain: strict;
 					border-radius: 4px;
 					font-size: 24px;
@@ -781,10 +782,10 @@ defineExpose({
 					}
 
 					> .emoji {
-						height: 1.25em;
+						height: 3em !important;
 						vertical-align: -.25em;
 						pointer-events: none;
-						width: 100%;
+						width: 3em;
 						object-fit: contain;
 					}
 				}

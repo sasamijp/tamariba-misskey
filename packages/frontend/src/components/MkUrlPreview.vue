@@ -55,13 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</header>
 			<p v-if="unknownUrl" :class="$style.text">{{ i18n.ts.failedToPreviewUrl }}</p>
 			<p v-else-if="fetching" :class="$style.text"><MkEllipsis/></p>
-			<p v-else-if="description" :class="$style.text" :title="description">{{ description.length > 85 ? description.slice(0, 85) + '…' : description }}</p>
-			<footer :class="$style.footer">
-				<img v-if="icon" :class="$style.siteIcon" :src="icon"/>
-				<p v-if="unknownUrl" :class="$style.siteName">{{ requestUrl.host }}</p>
-				<p v-else-if="fetching" :class="$style.siteName"><MkEllipsis/></p>
-				<p v-else :class="$style.siteName" :title="sitename ?? requestUrl.host">{{ sitename ?? requestUrl.host }}</p>
-			</footer>
+			<p v-else-if="description" :class="$style.text" :title="description">{{ description }}</p>
 		</article>
 	</component>
 	<template v-if="showActions">
@@ -119,8 +113,6 @@ const summalyResult = ref<SummalyResult | null>(null);
 const title = computed(() => summalyResult.value?.title ?? null);
 const description = computed(() => summalyResult.value?.description ?? null);
 const thumbnail = computed(() => summalyResult.value?.thumbnail ?? null);
-const icon = computed(() => summalyResult.value?.icon ?? null);
-const sitename = computed(() => summalyResult.value?.sitename ?? null);
 const sensitive = computed(() => summalyResult.value?.sensitive ?? false);
 const player = computed(() => summalyResult.value?.player ?? { url: null, width: null, height: null });
 const playerEnabled = ref(false);
@@ -232,11 +224,13 @@ onUnmounted(() => {
 	width: 100%;
 }
 
+// tamariba: 旧カスタムCSSを既定化。左に青い帯、本文の下に大きめのサムネイル、説明文は全文表示、フッターは出さない
 .link {
 	position: relative;
-	display: block;
-	font-size: 14px;
-	box-shadow: 0 0 0 1px var(--MI_THEME-divider);
+	display: flex;
+	flex-direction: column-reverse;
+	font-size: 18px;
+	background: linear-gradient(to right, #1DA0F2 0.8%, #2b2d31 0%);
 	border-radius: 8px;
 	overflow: clip;
 	text-align: left;
@@ -252,7 +246,7 @@ onUnmounted(() => {
 
 	&.compact {
 		> .body {
-			> .header .title, .text, .footer {
+			> .header .title {
 				overflow: hidden;
 				white-space: nowrap;
 				text-overflow: ellipsis;
@@ -262,19 +256,19 @@ onUnmounted(() => {
 }
 
 .thumbnail {
-	position: absolute;
-	width: 100px;
-	height: 100%;
-	background-position: center;
-	background-size: cover;
-	background-color: var(--MI_THEME-bg);
-	display: flex;
-	justify-content: center;
-	align-items: center;
+	position: relative;
+	display: block;
+	width: calc(100% - 16px);
+	height: 50vw;
+	max-height: 300px;
+	margin-bottom: 16px;
+	background-position: 16px;
+	background-size: contain;
+	background-repeat: no-repeat;
 
 	& + .body {
-		left: 100px;
-		width: calc(100% - 100px);
+		padding: 16px;
+		width: calc(100% - 16px);
 	}
 }
 
@@ -290,33 +284,15 @@ onUnmounted(() => {
 
 .title {
 	margin: 0;
-	font-size: 1em;
+	font-size: 0.9em;
+	color: #1DA0F2;
 }
 
 .text {
-	margin: 0;
-	font-size: 0.8em;
-}
-
-.footer {
-	margin-top: 8px;
-	height: 16px;
-}
-
-.siteIcon {
-	display: inline-block;
-	width: 16px;
-	height: 16px;
-	margin-right: 4px;
-	vertical-align: top;
-}
-
-.siteName {
-	display: inline-block;
-	margin: 0;
-	font-size: 0.8em;
-	line-height: 16px;
-	vertical-align: top;
+	margin: 16px 0 0 0;
+	font-size: 1rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
 
 .action {
@@ -327,14 +303,6 @@ onUnmounted(() => {
 }
 
 @container (max-width: 400px) {
-	.link {
-		font-size: 12px;
-	}
-
-	.thumbnail {
-		height: 80px;
-	}
-
 	.body {
 		padding: 12px;
 	}
@@ -342,33 +310,15 @@ onUnmounted(() => {
 
 @container (max-width: 350px) {
 	.link {
-		font-size: 10px;
-
 		&.compact {
-			> .thumbnail {
-				position: absolute;
-				width: 56px;
-				height: 100%;
-			}
-
-			> .body {
-				left: 56px;
-				width: calc(100% - 56px);
+			> .body:first-child {
 				padding: 4px;
 
 				> .header {
 					margin-bottom: 2px;
 				}
-
-				> .footer {
-					margin-top: 2px;
-				}
 			}
 		}
-	}
-
-	.thumbnail {
-		height: 70px;
 	}
 
 	.body {
@@ -377,15 +327,6 @@ onUnmounted(() => {
 
 	.header {
 		margin-bottom: 4px;
-	}
-
-	.footer {
-		margin-top: 4px;
-	}
-
-	.siteIcon {
-		width: 12px;
-		height: 12px;
 	}
 }
 </style>

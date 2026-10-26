@@ -240,7 +240,8 @@ function unmute() {
 
 <style lang="scss" module>
 .root {
-	height: 2em;
+	// tamariba: カスタム絵文字は常に大きく表示する (normal / noStyle 指定より優先)
+	height: 5em !important;
 	vertical-align: middle;
 	-webkit-user-drag: none;
 	transition: transform 0.2s ease;

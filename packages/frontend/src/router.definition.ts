@@ -177,10 +177,6 @@ export const ROUTE_DEF = [{
 		name: 'deck',
 		component: page(() => import('@/pages/settings/deck.vue')),
 	}, {
-		path: '/custom-css',
-		name: 'preferences',
-		component: page(() => import('@/pages/settings/custom-css.vue')),
-	}, {
 		path: '/profiles',
 		name: 'profiles',
 		component: page(() => import('@/pages/settings/profiles.vue')),

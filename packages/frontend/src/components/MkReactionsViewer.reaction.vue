@@ -337,7 +337,8 @@ if (!mock) {
 	width: auto;
 	max-width: none;
 	min-width: 0;
-	object-fit: contain;
+	// 画面幅に収まらず横幅だけ縮んだときは、縦横比を保たずに横方向だけ縮める
+	object-fit: fill;
 }
 
 .count {

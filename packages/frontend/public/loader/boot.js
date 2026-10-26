@@ -112,14 +112,7 @@
 		document.documentElement.classList.add('useSystemFont');
 	}
 
-	if (!isSafeMode) {
-		const customCss = localStorage.getItem('customCss');
-		if (customCss && customCss.length > 0) {
-			const style = document.createElement('style');
-			style.innerHTML = customCss;
-			document.head.appendChild(style);
-		}
-	}
+	// tamariba: カスタムCSS機能は封じている。保存済みのカスタムCSSがあっても読み込まない
 
 	async function addStyle(styleText) {
 		let css = document.createElement('style');

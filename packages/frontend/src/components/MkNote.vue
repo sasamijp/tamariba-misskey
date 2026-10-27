@@ -117,7 +117,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				style="margin-top: 6px;"
 				:reactions="$appearNote.reactions"
 				:reactionEmojis="$appearNote.reactionEmojis"
-				:myReaction="$appearNote.myReaction"
+				:myReactions="$appearNote.myReactions"
 				:noteId="appearNote.id"
 				:maxNumber="16"
 				@mockUpdateMyReaction="emitUpdReaction"
@@ -145,8 +145,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i class="ti ti-ban"></i>
 				</button>
 				<button ref="reactButton" :class="$style.footerButton" class="_button" @click="handleToggleReact()">
-					<i v-if="appearNote.reactionAcceptance === 'likeOnly' && $appearNote.myReaction != null" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
-					<i v-else-if="$appearNote.myReaction != null" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
+					<i v-if="appearNote.reactionAcceptance === 'likeOnly' && $appearNote.myReactions.length > 0" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
 					<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && $appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number($appearNote.reactionCount) }}</p>
@@ -337,13 +336,13 @@ const displayParsed = props.inThread && parsed != null ? stripLeadingMentions(pa
 
 function handleToggleReact() {
 	toggleReact((reaction) => {
-		if ($appearNote.myReaction === reaction) {
+		if ($appearNote.myReactions.includes(reaction)) {
 			emit('removeReaction', reaction);
 		} else {
 			emit('reaction', reaction);
 			$appearNote.reactions[reaction] = 1;
 			$appearNote.reactionCount++;
-			$appearNote.myReaction = reaction;
+			$appearNote.myReactions.push(reaction);
 		}
 	});
 }

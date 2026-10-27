@@ -399,6 +399,7 @@ export class WebhookTestService {
 				reply: note.reply ? await this.toPackedNote(note.reply, false) : null,
 				renote: note.renote ? await this.toPackedNote(note.renote, true) : null,
 				myReaction: null,
+				myReactions: [],
 			} : {}),
 			...override,
 		};

@@ -4532,6 +4532,7 @@ export type components = {
             clippedCount?: number;
             hasPoll?: boolean;
             myReaction?: string | null;
+            myReactions?: string[];
         };
         NoteDraft: {
             /**
@@ -30986,6 +30987,8 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     noteId: string;
+                    /** @description 取り消すリアクション。省略時は自分のリアクションをすべて取り消す */
+                    reaction?: string | null;
                 };
             };
         };

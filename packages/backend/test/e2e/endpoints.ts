@@ -247,13 +247,18 @@ describe('Endpoints', () => {
 			assert.strictEqual(res.status, 204);
 		});
 
-		test('二重にリアクションすると上書きされる', async () => {
+		test('別のリアクションを複数つけられ、種類ごとに最初につけられた順で並ぶ', async () => {
 			const bobPost = await post(bob, { text: 'hi' });
 
 			await api('notes/reactions/create', {
 				noteId: bobPost.id,
 				reaction: '🥰',
 			}, alice);
+
+			await api('notes/reactions/create', {
+				noteId: bobPost.id,
+				reaction: '🚀',
+			}, bob);
 
 			const res = await api('notes/reactions/create', {
 				noteId: bobPost.id,
@@ -267,7 +272,56 @@ describe('Endpoints', () => {
 			}, alice);
 
 			assert.strictEqual(resNote.status, 200);
+			assert.deepStrictEqual(resNote.body.reactions, { '🥰': 1, '🚀': 2 });
+			assert.deepStrictEqual(Object.keys(resNote.body.reactions), ['🥰', '🚀']);
+			assert.deepStrictEqual(resNote.body.myReactions, ['🥰', '🚀']);
+		});
+
+		test('同じリアクションは二重にはつけられない', async () => {
+			const bobPost = await post(bob, { text: 'hi' });
+
+			await api('notes/reactions/create', {
+				noteId: bobPost.id,
+				reaction: '🚀',
+			}, alice);
+
+			const res = await api('notes/reactions/create', {
+				noteId: bobPost.id,
+				reaction: '🚀',
+			}, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.ok(res.body);
+			assert.strictEqual(castAsError(res.body).error.code, 'ALREADY_REACTED');
+		});
+
+		test('指定したリアクションだけ取り消せる', async () => {
+			const bobPost = await post(bob, { text: 'hi' });
+
+			await api('notes/reactions/create', {
+				noteId: bobPost.id,
+				reaction: '🥰',
+			}, alice);
+
+			await api('notes/reactions/create', {
+				noteId: bobPost.id,
+				reaction: '🚀',
+			}, alice);
+
+			const res = await api('notes/reactions/delete', {
+				noteId: bobPost.id,
+				reaction: '🥰',
+			}, alice);
+
+			assert.strictEqual(res.status, 204);
+
+			const resNote = await api('notes/show', {
+				noteId: bobPost.id,
+			}, alice);
+
+			assert.strictEqual(resNote.status, 200);
 			assert.deepStrictEqual(resNote.body.reactions, { '🚀': 1 });
+			assert.deepStrictEqual(resNote.body.myReactions, ['🚀']);
 		});
 
 		test('存在しない投稿にはリアクションできない', async () => {

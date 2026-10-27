@@ -18,7 +18,7 @@ import * as os from '@/os.js';
 import { reactionPicker } from '@/utility/reaction-picker.js';
 import { extractUrlFromMfm } from '@/utility/extract-url-from-mfm.js';
 import { getNoteClipMenu, getNoteMenu, getRenoteMenu, getAbuseNoteMenu, getCopyNoteLinkMenu } from '@/utility/get-note-menu.js';
-import { noteEvents, useNoteCapture } from '@/composables/use-note-capture.js';
+import { noteEvents, normalizeReaction, useNoteCapture } from '@/composables/use-note-capture.js';
 import { deepClone } from '@/utility/clone.js';
 import { useTooltip } from '@/composables/use-tooltip.js';
 import { claimAchievement } from '@/utility/achievements.js';
@@ -162,7 +162,7 @@ export function useNote(
 	const collapsed = ref<boolean>(appearNote.cw == null && isLong);
 	const canRenote = ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id);
 	const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
-	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null)));
+	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReactions.length > 0)));
 
 	const pleaseLoginContext: OpenOnRemoteOptions = {
 		type: 'lookup',
@@ -272,6 +272,16 @@ export function useNote(
 		} else {
 			blur();
 			reactionPicker.show(els.reactButton?.value ?? null, rawNote, async (reaction) => {
+				// すでにつけているリアクションを選んだら取り消す
+				if (!props.mock && $appearNote.myReactions.includes(normalizeReaction(reaction))) {
+					const confirm = await os.confirm({
+						type: 'warning',
+						text: i18n.ts.cancelReactionConfirm,
+					});
+					if (confirm.canceled) return;
+					undoReact(normalizeReaction(reaction));
+					return;
+				}
 				if (prefer.s.confirmOnReact) {
 					const confirm = await os.confirm({
 						type: 'question',
@@ -314,24 +324,27 @@ export function useNote(
 		});
 	}
 
-	function undoReact(): void {
-		const oldReaction = $appearNote.myReaction;
-		if (!oldReaction) return;
+	function undoReact(reaction?: string): void {
 		if (props.mock) return;
-		misskeyApi('notes/reactions/delete', { noteId: appearNote.id }).then(() => {
-			noteEvents.emit(`unreacted:${appearNote.id}`, { userId: $i!.id, reaction: oldReaction });
+		const oldReactions = reaction != null ? [reaction] : [...$appearNote.myReactions];
+		if (oldReactions.length === 0) return;
+		misskeyApi('notes/reactions/delete', { noteId: appearNote.id, reaction: reaction ?? null }).then(() => {
+			for (const oldReaction of oldReactions) {
+				noteEvents.emit(`unreacted:${appearNote.id}`, { userId: $i!.id, reaction: oldReaction });
+			}
 		});
 	}
 
 	function toggleReact(customMockCallback?: (reaction: string) => void) {
-		if ($appearNote.myReaction == null) {
-			react(customMockCallback);
-		} else {
+		// いいねのみのノートはいいねの付け外し、それ以外は常にリアクションを追加する (複数つけられる)
+		if (appearNote.reactionAcceptance === 'likeOnly' && $appearNote.myReactions.length > 0) {
 			if (props.mock && customMockCallback) {
-				customMockCallback($appearNote.myReaction);
+				customMockCallback($appearNote.myReactions[0]);
 			} else {
 				undoReact();
 			}
+		} else {
+			react(customMockCallback);
 		}
 	}
 

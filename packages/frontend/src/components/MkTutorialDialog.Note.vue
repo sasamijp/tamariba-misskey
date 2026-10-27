@@ -98,7 +98,8 @@ function doNotification(emoji: string): void {
 
 function removeReaction(emoji: string) {
 	delete exampleNote.reactions[emoji];
-	exampleNote.myReaction = undefined;
+	exampleNote.myReactions = (exampleNote.myReactions ?? []).filter(x => x !== emoji);
+	exampleNote.myReaction = exampleNote.myReactions[0];
 }
 </script>
 

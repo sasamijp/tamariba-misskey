@@ -177,19 +177,8 @@ export class ReactionService {
 			await this.noteReactionsRepository.insert(record);
 		} catch (e) {
 			if (isDuplicateKeyValueError(e)) {
-				const exists = await this.noteReactionsRepository.findOneByOrFail({
-					noteId: note.id,
-					userId: user.id,
-				});
-
-				if (exists.reaction !== reaction) {
-					// 別のリアクションがすでにされていたら置き換える
-					await this.delete(user, note);
-					await this.noteReactionsRepository.insert(record);
-				} else {
-					// 同じリアクションがすでにされていたらエラー
-					throw new IdentifiableError('51c42bb4-931a-456b-bff7-e5a8a70dd298');
-				}
+				// 同じリアクションがすでにされていたらエラー (別のリアクションなら複数つけられる)
+				throw new IdentifiableError('51c42bb4-931a-456b-bff7-e5a8a70dd298');
 			} else {
 				throw e;
 			}
@@ -288,17 +277,52 @@ export class ReactionService {
 	}
 
 	@bindThis
-	public async delete(user: { id: MiUser['id']; host: MiUser['host']; isBot: MiUser['isBot']; }, note: MiNote) {
-		// if already unreacted
-		const exist = await this.noteReactionsRepository.findOneBy({
-			noteId: note.id,
-			userId: user.id,
+	public async delete(user: { id: MiUser['id']; host: MiUser['host']; isBot: MiUser['isBot']; }, note: MiNote, reaction?: string | null) {
+		const exists = await this.noteReactionsRepository.find({
+			where: {
+				noteId: note.id,
+				userId: user.id,
+			},
+			order: { id: 'ASC' },
 		});
 
+		if (reaction == null) {
+			// リアクションの指定が無ければ、そのユーザーのリアクションをすべて取り消す
+			if (exists.length === 0) {
+				throw new IdentifiableError('60527ec9-b4cb-4a88-a6bd-32d3ad26817d', 'not reacted');
+			}
+			for (const exist of exists) {
+				await this.deleteOne(user, note, exist);
+			}
+			return;
+		}
+
+		const target = this.reactionKey(reaction);
+		const exist = target == null ? undefined : exists.find(x => this.convertLegacyReaction(x.reaction) === target);
+
+		// if already unreacted
 		if (exist == null) {
 			throw new IdentifiableError('60527ec9-b4cb-4a88-a6bd-32d3ad26817d', 'not reacted');
 		}
 
+		await this.deleteOne(user, note, exist);
+	}
+
+	/**
+	 * クライアントから渡されたリアクション文字列を `convertLegacyReaction()` と同じ形式にする
+	 * (リアクションとして解釈できない文字列なら null)
+	 */
+	@bindThis
+	private reactionKey(reaction: string): string | null {
+		if (reaction.startsWith(':')) return this.decodeReaction(reaction).reaction;
+		const normalized = this.normalize(reaction);
+		// 解釈できない文字列は normalize() で FALLBACK に化けるので、無関係な ❤ を消さないよう弾く
+		if (normalized === FALLBACK && reaction.replace(/\ufe0f/g, '') !== FALLBACK && !Object.keys(legacies).includes(reaction)) return null;
+		return normalized;
+	}
+
+	@bindThis
+	private async deleteOne(user: { id: MiUser['id']; host: MiUser['host']; isBot: MiUser['isBot']; }, note: MiNote, exist: MiNoteReaction) {
 		// Delete reaction
 		const result = await this.noteReactionsRepository.delete(exist.id);
 

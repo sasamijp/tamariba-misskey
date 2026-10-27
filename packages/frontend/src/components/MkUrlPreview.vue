@@ -58,12 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<p v-else-if="description" :class="$style.text" :title="description">{{ description }}</p>
 		</article>
 	</component>
+	<!-- tamariba: X の「ポストを展開する」ボタンは出さない -->
 	<template v-if="showActions">
-		<div v-if="tweetId" :class="$style.action">
-			<MkButton :small="true" inline @click="tweetExpanded = true">
-				<i class="ti ti-brand-x"></i> {{ i18n.ts.expandTweet }}
-			</MkButton>
-		</div>
 		<div v-if="!playerEnabled && player.url" :class="$style.action">
 			<MkButton :small="true" inline @click="playerEnabled = true">
 				<i class="ti ti-player-play"></i> {{ i18n.ts.enablePlayer }}
@@ -112,7 +108,11 @@ const fetching = ref(true);
 const summalyResult = ref<SummalyResult | null>(null);
 const title = computed(() => summalyResult.value?.title ?? null);
 const description = computed(() => summalyResult.value?.description ?? null);
-const thumbnail = computed(() => summalyResult.value?.thumbnail ?? null);
+// tamariba: X は添付画像の無いポストだと summary カードでユーザーアイコンを返すので、その場合はサムネイルを出さない
+const thumbnail = computed(() => {
+	if (tweetId.value != null && summalyResult.value?.thumbnailStyle !== 'summary_large_image') return null;
+	return summalyResult.value?.thumbnail ?? null;
+});
 const sensitive = computed(() => summalyResult.value?.sensitive ?? false);
 const player = computed(() => summalyResult.value?.player ?? { url: null, width: null, height: null });
 const playerEnabled = ref(false);

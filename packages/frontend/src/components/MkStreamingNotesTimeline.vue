@@ -36,15 +36,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
 						<span>{{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
 					</div>
-					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
+					<MkNote :class="$style.note" :note="note" :withHardMute="true" :withThread="withThread"/>
 				</div>
 				<div v-else-if="note._shouldInsertAd_" :data-scroll-anchor="note.id">
-					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
+					<MkNote :class="$style.note" :note="note" :withHardMute="true" :withThread="withThread"/>
 					<div :class="$style.ad">
 						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 					</div>
 				</div>
-				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :data-scroll-anchor="note.id"/>
+				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :withThread="withThread" :data-scroll-anchor="note.id"/>
 			</template>
 		</component>
 		<button v-show="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.s.enableInfiniteScroll ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
@@ -100,6 +100,9 @@ const props = withDefaults(defineProps<{
 	customSound: null,
 });
 
+// ホーム・ローカル・ソーシャルでは返信を単体で流さず、ルート投稿の下にスレッドとして表示する
+const withThread = computed(() => props.src === 'home' || props.src === 'local' || props.src === 'social');
+
 provide('inTimeline', true);
 provide('tl_withSensitive', computed(() => props.withSensitive));
 provide(DI.inChannel, computed(() => props.src === 'channel' ? props.channel ?? null : null));
@@ -125,7 +128,7 @@ if (props.src === 'antenna') {
 	paginator = markRaw(new Paginator('notes/local-timeline', {
 		computedParams: computed(() => ({
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
+			withReplies: withThread.value ? false : props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
@@ -134,7 +137,7 @@ if (props.src === 'antenna') {
 	paginator = markRaw(new Paginator('notes/hybrid-timeline', {
 		computedParams: computed(() => ({
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
+			withReplies: withThread.value ? false : props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		})),
 		useShallowRef: true,
@@ -283,6 +286,9 @@ function releaseQueue() {
 }
 
 function prepend(note: Misskey.entities.Note & MisskeyEntity) {
+	// 返信はルート投稿のスレッド側で表示する
+	if (withThread.value && note.replyId != null) return;
+
 	adInsertionCounter++;
 
 	if (instance.notesPerOneAd > 0 && adInsertionCounter % instance.notesPerOneAd === 0) {
@@ -336,14 +342,14 @@ function connectChannel() {
 	} else if (props.src === 'local') {
 		connections.localTimeline = stream.useChannel('localTimeline', {
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
+			withReplies: withThread.value ? false : props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		});
 		connections.localTimeline.on('note', prepend);
 	} else if (props.src === 'social') {
 		connections.hybridTimeline = stream.useChannel('hybridTimeline', {
 			withRenotes: props.withRenotes,
-			withReplies: props.withReplies,
+			withReplies: withThread.value ? false : props.withReplies,
 			withFiles: props.onlyFiles ? true : undefined,
 		});
 		connections.hybridTimeline.on('note', prepend);

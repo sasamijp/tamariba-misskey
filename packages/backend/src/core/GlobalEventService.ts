@@ -126,6 +126,10 @@ export interface NoteEventTypes {
 		reaction: string;
 		userId: MiUser['id'];
 	};
+	// スレッドのルート投稿に向けて、配下の返信が増えた・消えたことを通知する
+	threadUpdated: {
+		noteId: MiNote['id'];
+	};
 }
 type NoteStreamEventTypes = {
 	[key in keyof NoteEventTypes]: {

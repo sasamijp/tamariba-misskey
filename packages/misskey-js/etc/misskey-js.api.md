@@ -2091,6 +2091,8 @@ declare namespace entities {
         NotesStateResponse,
         NotesThreadMutingCreateRequest,
         NotesThreadMutingDeleteRequest,
+        NotesThreadRepliesRequest,
+        NotesThreadRepliesResponse,
         NotesTimelineRequest,
         NotesTimelineResponse,
         NotesTranslateRequest,
@@ -3119,6 +3121,12 @@ type NotesThreadMutingCreateRequest = operations['notes___thread-muting___create
 
 // @public (undocumented)
 type NotesThreadMutingDeleteRequest = operations['notes___thread-muting___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesThreadRepliesRequest = operations['notes___thread-replies']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesThreadRepliesResponse = operations['notes___thread-replies']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesTimelineRequest = operations['notes___timeline']['requestBody']['content']['application/json'];

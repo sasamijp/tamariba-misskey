@@ -1024,6 +1024,16 @@ export class NoteCreateService implements OnApplicationShutdown {
 	@bindThis
 	private saveReply(reply: MiNote, note: MiNote) {
 		this.notesRepository.increment({ id: reply.id }, 'repliesCount', 1);
+
+		// タイムラインでスレッドを表示しているクライアントへ、ルート投稿経由で返信の追加を知らせる。
+		// 購読者の絞り込みはルート投稿の公開範囲で行われるため、指名の返信は存在自体を知らせない
+		if (note.visibility === 'specified') return;
+		const root = reply.threadId == null ? Promise.resolve(reply) : this.notesRepository.findOneBy({ id: reply.threadId });
+		root.then(root => {
+			if (root != null) this.globalEventService.publishNoteStream(root, 'threadUpdated', { noteId: note.id });
+		}).catch(() => {
+			// 通知は表示の即時更新のためのもので、失敗してもポーリングや再読み込みで追いつくため握りつぶす
+		});
 	}
 
 	@bindThis

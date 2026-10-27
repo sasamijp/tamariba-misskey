@@ -121,6 +121,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					: me ? ['localTimeline', `localTimelineWithReplyTo:${me.id}`]
 					: ['localTimeline'],
 				alwaysIncludeMyNotes: true,
+				excludeAllReplies: true,
 				excludePureRenotes: !ps.withRenotes,
 				dbFallback: async (untilId, sinceId, limit) => await this.getFromDb({
 					untilId,
@@ -177,17 +178,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			query.andWhere('note.fileIds != \'{}\'');
 		}
 
-		if (!ps.withReplies) {
-			query.andWhere(new Brackets(qb => {
-				qb
-					.where('note.replyId IS NULL') // 返信ではない
-					.orWhere(new Brackets(qb => {
-						qb // 返信だけど投稿者自身への返信
-							.where('note.replyId IS NOT NULL')
-							.andWhere('note.replyUserId = note.userId');
-					}));
-			}));
-		}
+		// 返信はタイムラインに単体で流さず、ルート投稿の下にスレッドとして表示する (withReplies は無視する)
+		query.andWhere('note.replyId IS NULL');
 
 		return await query.limit(ps.limit).getMany();
 	}

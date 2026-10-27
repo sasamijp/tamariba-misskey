@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender }]"
 	tabindex="0"
 >
-	<MkNoteSub v-if="appearNote.replyId && !renoteCollapsed" :note="appearNote?.reply ?? null" :class="$style.replyTo"/>
+	<MkNoteSub v-if="appearNote.replyId && !renoteCollapsed && !inThread" :note="appearNote?.reply ?? null" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
 	<div v-if="isRenote" :class="$style.renote">
 		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
@@ -66,10 +66,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-show="appearNote.cw == null || showContent" :class="[{ [$style.contentCollapsed]: collapsed }]">
 					<div :class="$style.text">
 						<span v-if="appearNote.isHidden" style="opacity: 0.5">({{ i18n.ts.private }})</span>
-						<MkA v-if="appearNote.replyId" :class="$style.replyIcon" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
+						<MkA v-if="appearNote.replyId && !inThread" :class="$style.replyIcon" :to="`/notes/${appearNote.replyId}`"><i class="ti ti-arrow-back-up"></i></MkA>
 						<Mfm
 							v-if="appearNote.text"
-							:parsedNodes="parsed"
+							:parsedNodes="displayParsed"
 							:text="appearNote.text"
 							:author="appearNote.user"
 							:nyaize="'respect'"
@@ -160,6 +160,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</footer>
 		</div>
 	</article>
+	<MkNoteThread v-if="withThread && !mock && !renoteCollapsed && appearNote.replyId == null" :rootNote="appearNote"/>
 </div>
 <div v-else-if="!hardMuted && !hideByPlugin" :class="$style.muted" @click="muted = false">
 	<I18n v-if="muted === 'sensitiveMute'" :src="i18n.ts.userSaysSomethingSensitive" tag="small">
@@ -196,9 +197,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject, ref, useTemplateRef, provide, computed } from 'vue';
+import { inject, ref, useTemplateRef, provide, computed, defineAsyncComponent } from 'vue';
 import type { Ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import * as mfm from 'mfm-js';
 import { useNote } from '@/composables/use-note.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
@@ -221,13 +223,22 @@ import MkPoll from '@/components/MkPoll.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 
+// MkNoteThread は返信の表示に MkNote を使うため、循環 import を避けて遅延読み込みする
+const MkNoteThread = defineAsyncComponent(() => import('@/components/MkNoteThread.vue'));
+
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
 	pinned?: boolean;
 	mock?: boolean;
 	withHardMute?: boolean;
+	// ルート投稿の下に、配下の返信をスレッドとして常に展開表示する
+	withThread?: boolean;
+	// スレッド内の返信として表示する (返信先の表示を省く)
+	inThread?: boolean;
 }>(), {
 	mock: false,
+	withThread: false,
+	inThread: false,
 });
 
 const emit = defineEmits<{
@@ -303,6 +314,26 @@ provide(DI.mfmEmojiReactCallback, reactViaMfmEmoji);
 
 // MkNote固有
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
+
+// スレッド内では、返信時に自動で付く先頭のメンション (@user) を省いて表示する
+function stripLeadingMentions(nodes: mfm.MfmNode[]): mfm.MfmNode[] {
+	let i = 0;
+	while (i < nodes.length) {
+		const node = nodes[i];
+		if (node.type === 'mention' || (node.type === 'text' && node.props.text.trim() === '')) {
+			i++;
+			continue;
+		}
+		break;
+	}
+	const rest = nodes.slice(i);
+	if (rest[0]?.type === 'text') {
+		rest[0] = { ...rest[0], props: { ...rest[0].props, text: rest[0].props.text.trimStart() } };
+	}
+	return rest;
+}
+
+const displayParsed = props.inThread && parsed != null ? stripLeadingMentions(parsed) : parsed;
 
 function handleToggleReact() {
 	toggleReact((reaction) => {
@@ -447,7 +478,8 @@ const keymap = {
 	// TODO: これが有効だとTransitionGroupでnoteを追加するときに一瞬がくっとなってしまうのをどうにかしたい
 	// Transitionが完了するのを待ってからskipRenderを付与すれば解決しそうだけどパフォーマンス的な影響が不明
 	content-visibility: auto;
-	contain-intrinsic-size: 0 150px;
+	// 一度描画した高さを覚えさせ、スレッドで背が高いノートでもスクロール位置が跳ねないようにする
+	contain-intrinsic-size: auto 0 auto 150px;
 }
 
 .tip {

@@ -158,6 +158,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				redisTimelines: timelineConfig,
 				useDbFallback: this.serverSettings.enableFanoutTimelineDbFallback,
 				alwaysIncludeMyNotes: true,
+				excludeAllReplies: true,
 				excludePureRenotes: !ps.withRenotes,
 				noteFilter: note => {
 					if (note.reply && note.reply.visibility === 'followers') {
@@ -238,17 +239,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}));
 		}
 
-		if (!ps.withReplies) {
-			query.andWhere(new Brackets(qb => {
-				qb
-					.where('note.replyId IS NULL') // 返信ではない
-					.orWhere(new Brackets(qb => {
-						qb // 返信だけど投稿者自身への返信
-							.where('note.replyId IS NOT NULL')
-							.andWhere('note.replyUserId = note.userId');
-					}));
-			}));
-		}
+		// 返信はタイムラインに単体で流さず、ルート投稿の下にスレッドとして表示する (withReplies は無視する)
+		query.andWhere('note.replyId IS NULL');
 
 		this.queryService.generateVisibilityQuery(query, me);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);

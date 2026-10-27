@@ -62,7 +62,7 @@ const withRenotes = computed<boolean>({
 
 // computed内での無限ループを防ぐためのフラグ
 const localSocialTLFilterSwitchStore = ref<'withReplies' | 'onlyFiles' | false>(
-	store.r.tl.value.filter.withReplies ? 'withReplies' :
+	store.r.tl.value.filter.withReplies && isBasicTimeline(src.value) && hasWithReplies(src.value) ? 'withReplies' :
 	store.r.tl.value.filter.onlyFiles ? 'onlyFiles' :
 	false,
 );
@@ -70,6 +70,7 @@ const localSocialTLFilterSwitchStore = ref<'withReplies' | 'onlyFiles' | false>(
 const withReplies = computed<boolean>({
 	get: () => {
 		if (!$i) return false;
+		if (!isBasicTimeline(src.value) || !hasWithReplies(src.value)) return false;
 		if (['local', 'social'].includes(src.value) && localSocialTLFilterSwitchStore.value === 'onlyFiles') {
 			return false;
 		} else {

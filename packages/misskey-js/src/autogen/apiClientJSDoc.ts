@@ -4000,6 +4000,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Get all replies in the threads started by the given root notes, in chronological order.
+     * 
+     * **Credential required**: *No*
+     */
+    request<E extends 'notes/thread-replies', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*

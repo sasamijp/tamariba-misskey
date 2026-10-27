@@ -72,6 +72,15 @@ export class NoteDeleteService {
 				deletedAt: deletedAt,
 			});
 
+			// タイムラインでスレッドを表示しているクライアントへ、ルート投稿経由で返信が消えたことを知らせる
+			if (note.threadId != null && note.visibility !== 'specified') {
+				this.notesRepository.findOneBy({ id: note.threadId }).then(root => {
+					if (root != null) this.globalEventService.publishNoteStream(root, 'threadUpdated', { noteId: note.id });
+				}).catch(() => {
+					// 通知は表示の即時更新のためのもので、失敗しても再読み込みで追いつくため握りつぶす
+				});
+			}
+
 			//#region ローカルの投稿なら削除アクティビティを配送
 			if (this.userEntityService.isLocalUser(user) && !note.localOnly) {
 				let renote: MiNote | null = null;

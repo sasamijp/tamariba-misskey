@@ -547,6 +547,8 @@ import type {
 	NotesStateResponse,
 	NotesThreadMutingCreateRequest,
 	NotesThreadMutingDeleteRequest,
+	NotesThreadRepliesRequest,
+	NotesThreadRepliesResponse,
 	NotesTimelineRequest,
 	NotesTimelineResponse,
 	NotesTranslateRequest,
@@ -1027,6 +1029,7 @@ export type Endpoints = {
 	'notes/state': { req: NotesStateRequest; res: NotesStateResponse };
 	'notes/thread-muting/create': { req: NotesThreadMutingCreateRequest; res: EmptyResponse };
 	'notes/thread-muting/delete': { req: NotesThreadMutingDeleteRequest; res: EmptyResponse };
+	'notes/thread-replies': { req: NotesThreadRepliesRequest; res: NotesThreadRepliesResponse };
 	'notes/timeline': { req: NotesTimelineRequest; res: NotesTimelineResponse };
 	'notes/translate': { req: NotesTranslateRequest; res: NotesTranslateResponse };
 	'notes/unrenote': { req: NotesUnrenoteRequest; res: EmptyResponse };

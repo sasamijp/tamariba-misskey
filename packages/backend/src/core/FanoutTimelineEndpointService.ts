@@ -40,6 +40,7 @@ type TimelineOptions = {
 	ignoreAuthorChannelFromMute?: boolean;
 	excludeNoFiles?: boolean;
 	excludeReplies?: boolean;
+	excludeAllReplies?: boolean;
 	excludePureRenotes: boolean;
 	ignoreAuthorFromUserSuspension?: boolean;
 	dbFallback: (untilId: string | null, sinceId: string | null, limit: number) => Promise<MiNote[]>,
@@ -101,6 +102,11 @@ export class FanoutTimelineEndpointService {
 			if (ps.excludeReplies) {
 				const parentFilter = filter;
 				filter = (note) => !isReply(note, ps.me?.id) && parentFilter(note);
+			}
+
+			if (ps.excludeAllReplies) {
+				const parentFilter = filter;
+				filter = (note) => note.replyId == null && parentFilter(note);
 			}
 
 			if (ps.excludePureRenotes) {

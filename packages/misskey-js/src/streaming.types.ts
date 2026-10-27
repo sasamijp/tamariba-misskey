@@ -329,6 +329,11 @@ export type NoteUpdatedEvent = { id: Note['id'] } & ({
 		choice: number;
 		userId: User['id'];
 	};
+} | {
+	type: 'threadUpdated';
+	body: {
+		noteId: Note['id'];
+	};
 });
 
 export type BroadcastEvents = {

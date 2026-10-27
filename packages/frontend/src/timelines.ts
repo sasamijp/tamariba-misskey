@@ -52,5 +52,6 @@ export function availableBasicTimelines(): BasicTimelineType[] {
 }
 
 export function hasWithReplies(timeline: BasicTimelineType | undefined | null): boolean {
-	return timeline === 'local' || timeline === 'social';
+	// 返信はルート投稿の下にスレッドとして常に表示するため、「返信を含める」の切り替えは提供しない
+	return false;
 }
